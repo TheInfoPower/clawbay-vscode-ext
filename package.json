@@ -1,0 +1,54 @@
+{
+  "name": "clawbay-quota",
+  "displayName": "Clawbay Quota",
+  "description": "VS Code extension scaffold for viewing Clawbay quota.",
+  "version": "0.0.1",
+  "publisher": "clawbay",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:clawbayQuota.refresh"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "clawbayQuota.refresh",
+        "title": "Clawbay Quota: Refresh"
+      }
+    ],
+    "configuration": {
+      "title": "Clawbay Quota",
+      "properties": {
+        "clawbayQuota.statusBarAlignment": {
+          "type": "string",
+          "enum": ["left", "right"],
+          "default": "left",
+          "description": "Where the Clawbay status item appears."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/run-test.js",
+    "test:ci": "npm run compile && VSCODE_SKIP_LAUNCH_TESTS=1 node ./out/test/run-test.js"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "mocha": "^10.8.2",
+    "@types/node": "^20.17.30",
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-electron": "^2.5.2",
+    "typescript": "^5.8.2"
+  }
+}
