@@ -1,8 +1,8 @@
 {
   "name": "clawbay-quota",
   "displayName": "Clawbay Quota",
-  "description": "Monitor your Clawbay API quota directly in the VS Code status bar. Shows 5-hour and weekly usage at a glance, with cost breakdowns and reset timers on hover.",
-  "version": "0.0.1",
+  "description": "Track your Clawbay API spending without leaving VS Code. Shows 5-hour and weekly usage in the status bar — hover for cost breakdown and time until reset.",
+  "version": "0.0.2",
   "publisher": "theInfoPower",
   "license": "MIT",
   "icon": "icon.png",
