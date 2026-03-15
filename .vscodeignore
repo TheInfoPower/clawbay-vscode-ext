@@ -4,3 +4,8 @@ tsconfig.json
 **/*.map
 **/*.ts
 node_modules/.bin/**
+.env
+.gitignore
+icon.svg
+plans/**
+out/test/**

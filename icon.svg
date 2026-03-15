@@ -1,0 +1,34 @@
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b5e" />
+      <stop offset="100%" stop-color="#b3293f" />
+    </linearGradient>
+    <linearGradient id="water-gradient" x1="0%" y1="82%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3cc6d2" stop-opacity="0.28" />
+      <stop offset="50%" stop-color="#9fefff" stop-opacity="0.62" />
+      <stop offset="100%" stop-color="#33b8c5" stop-opacity="0.28" />
+    </linearGradient>
+  </defs>
+
+  <path d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z" fill="url(#lobster-gradient)" />
+  <path d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z" fill="url(#lobster-gradient)" />
+  <path d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z" fill="url(#lobster-gradient)" />
+  <path d="M45 15 Q35 5 30 8" stroke="#ff6b5e" stroke-width="2" stroke-linecap="round" />
+  <path d="M75 15 Q85 5 90 8" stroke="#ff6b5e" stroke-width="2" stroke-linecap="round" />
+
+  <circle cx="45" cy="35" r="6" fill="#08101a" />
+  <circle cx="75" cy="35" r="6" fill="#08101a" />
+  <circle cx="46" cy="34" r="2" fill="#6befff" />
+  <circle cx="76" cy="34" r="2" fill="#6befff" />
+
+  <path d="M27 24 C30 10.5 43.5 4 60 4 C76.5 4 90 10.5 93 24 C86 22 78 20.2 70 19.4 C66.5 19.4 63.1 20.1 60 21.2 C56.9 20.1 53.5 19.4 50 19.4 C42 20.2 34 22 27 24 Z" fill="#162334" stroke="#3b536f" stroke-width="1.7" stroke-linejoin="round" />
+  <path d="M13 23 C23.5 17.2 40.3 14.2 60 14.2 C79.7 14.2 96.5 17.2 107 23 C96.6 28 80.1 30.8 60 30.8 C39.9 30.8 23.4 28 13 23 Z" fill="#070f1b" stroke="#2f455f" stroke-width="1.7" stroke-linejoin="round" />
+  <path d="M60 19.1 C61.9 19.1 63.4 20.6 63.4 22.5 C63.4 23.6 62.9 24.5 62.1 25.1 V26.1 C62.1 26.5 61.8 26.8 61.4 26.8 H58.6 C58.2 26.8 57.9 26.5 57.9 26.1 V25.1 C57.1 24.5 56.6 23.6 56.6 22.5 C56.6 20.6 58.1 19.1 60 19.1 Z" fill="#d8e8f8" />
+  <circle cx="58.9" cy="22.4" r="0.45" fill="#07101c" />
+  <circle cx="61.1" cy="22.4" r="0.45" fill="#07101c" />
+  <path d="M59.2 24.4 H60.8" stroke="#07101c" stroke-width="0.7" stroke-linecap="round" />
+
+  <path d="M8 90 C16 84 24 96 32 90 C40 84 48 96 56 90 C64 84 72 96 80 90 C88 84 96 96 112 90 V120 H8 Z" fill="url(#water-gradient)" />
+  <path d="M10 92 C18 87 26 98 34 92 C42 87 50 98 58 92 C66 87 74 98 82 92 C90 87 98 98 110 92" stroke="#b7f7ff" stroke-opacity="0.45" stroke-width="1.6" stroke-linecap="round" />
+</svg>

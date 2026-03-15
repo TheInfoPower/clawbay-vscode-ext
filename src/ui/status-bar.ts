@@ -46,8 +46,10 @@ export class QuotaStatusBar implements vscode.Disposable {
         return "$(sync~spin)";
       case "unauthenticated":
         return "$(key)";
-      case "stubbed":
-        return "$(beaker)";
+      case "ok":
+        return "$(graph)";
+      case "limited":
+        return "$(warning)";
       default:
         return "$(warning)";
     }

@@ -1,10 +1,15 @@
 {
   "name": "clawbay-quota",
   "displayName": "Clawbay Quota",
-  "description": "VS Code extension scaffold for viewing Clawbay quota.",
+  "description": "Monitor your Clawbay API quota directly in the VS Code status bar. Shows 5-hour and weekly usage at a glance, with cost breakdowns and reset timers on hover.",
   "version": "0.0.1",
-  "publisher": "clawbay",
-  "license": "UNLICENSED",
+  "publisher": "theInfoPower",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheInfoPower/clawbay-vscode-ext.git"
+  },
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -12,8 +17,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onCommand:clawbayQuota.refresh"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
