@@ -21,6 +21,10 @@
       {
         "command": "clawbayQuota.refresh",
         "title": "Clawbay Quota: Refresh"
+      },
+      {
+        "command": "clawbayQuota.setToken",
+        "title": "Clawbay Quota: Set API Token"
       }
     ],
     "configuration": {

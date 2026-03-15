@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 export const EXTENSION_NAMESPACE = "clawbayQuota";
 export const REFRESH_COMMAND_ID = "clawbayQuota.refresh";
+export const SET_TOKEN_COMMAND_ID = "clawbayQuota.setToken";
 export const TOKEN_SECRET_KEY = "clawbayQuota.apiToken";
 
 export function getStatusBarAlignment(): vscode.StatusBarAlignment {
