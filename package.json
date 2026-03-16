@@ -58,5 +58,10 @@
     "@types/vscode": "^1.95.0",
     "@vscode/test-electron": "^2.5.2",
     "typescript": "^5.8.2"
+  },
+  "overrides": {
+    "mocha": {
+      "serialize-javascript": "^7.0.3"
+    }
   }
 }
