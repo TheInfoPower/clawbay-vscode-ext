@@ -4,7 +4,7 @@ import { REFRESH_COMMAND_ID } from "../../config/settings";
 
 suite("Extension Scaffold", () => {
   suiteSetup(async () => {
-    const ext = vscode.extensions.getExtension("clawbay.clawbay-quota");
+    const ext = vscode.extensions.getExtension("theInfoPower.clawbay-quota");
     if (ext && !ext.isActive) {
       await ext.activate();
     }
