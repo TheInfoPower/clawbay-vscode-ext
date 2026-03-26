@@ -8,6 +8,7 @@ export function run(): Promise<void> {
   });
 
   mocha.addFile(path.resolve(__dirname, "./extension.test"));
+  mocha.addFile(path.resolve(__dirname, "./quota-client.test"));
 
   return new Promise((resolve, reject) => {
     mocha.run((failures) => {

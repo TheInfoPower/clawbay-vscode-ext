@@ -17,6 +17,7 @@ export class QuotaStatusBar implements vscode.Disposable {
   public renderLoading(): void {
     this.item.text = "$(sync~spin) Clawbay: refreshing";
     this.item.tooltip = "Refreshing quota placeholder";
+    this.item.command = this.defaultCommand;
   }
 
   public renderSnapshot(
@@ -34,6 +35,7 @@ export class QuotaStatusBar implements vscode.Disposable {
   public renderError(detail: string): void {
     this.item.text = "$(warning) Clawbay: error";
     this.item.tooltip = detail;
+    this.item.command = this.defaultCommand;
   }
 
   public dispose(): void {

@@ -1,27 +1,32 @@
+import { z } from "zod";
+
 export type QuotaState = "loading" | "unauthenticated" | "ok" | "limited" | "error";
 
-export interface UsageWindow {
-  windowStart: string;
-  windowEnd: string;
-  secondsUntilReset: number;
-  requestCount: number;
-  estimatedCostUsdUsed: number;
-  costUsdLimit: number;
-  costUsdRemaining: number;
-  percentUsed: number;
-  limitReached: boolean;
-}
+const UsageWindowSchema = z.object({
+  windowStart: z.string(),
+  windowEnd: z.string(),
+  secondsUntilReset: z.number(),
+  requestCount: z.number(),
+  estimatedCostUsdUsed: z.number(),
+  costUsdLimit: z.number(),
+  costUsdRemaining: z.number(),
+  percentUsed: z.number(),
+  limitReached: z.boolean(),
+});
 
-export interface QuotaApiResponse {
-  observedAt: string;
-  anyLimitReached: boolean;
-  fiveHourLimitReached: boolean;
-  weeklyLimitReached: boolean;
-  usage: {
-    fiveHour: UsageWindow;
-    weekly: UsageWindow;
-  };
-}
+const QuotaApiResponseSchema = z.object({
+  observedAt: z.string(),
+  anyLimitReached: z.boolean(),
+  fiveHourLimitReached: z.boolean(),
+  weeklyLimitReached: z.boolean(),
+  usage: z.object({
+    fiveHour: UsageWindowSchema,
+    weekly: UsageWindowSchema,
+  }),
+});
+
+export type UsageWindow = z.infer<typeof UsageWindowSchema>;
+export type QuotaApiResponse = z.infer<typeof QuotaApiResponseSchema>;
 
 export interface QuotaSnapshot {
   state: QuotaState;
@@ -35,6 +40,12 @@ export function makeSnapshot(state: QuotaState, label: string, detail: string): 
     state,
     label,
     detail,
-    updatedAtIso: new Date().toISOString()
+    updatedAtIso: new Date().toISOString(),
   };
 }
+
+export function parseQuotaApiResponse(payload: unknown): QuotaApiResponse {
+  return QuotaApiResponseSchema.parse(payload);
+}
+
+export { QuotaApiResponseSchema, UsageWindowSchema };

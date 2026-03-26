@@ -1,7 +1,20 @@
 import type { SecretStore } from "../auth/secret-store";
-import { makeSnapshot, type QuotaApiResponse, type QuotaSnapshot } from "./model";
+import { makeSnapshot, parseQuotaApiResponse, type QuotaApiResponse, type QuotaSnapshot } from "./model";
 
 const QUOTA_URL = "https://theclawbay.com/api/codex-auth/v1/quota";
+const RETRY_DELAYS_MS = [0, 250, 750];
+
+export type QuotaClientErrorType = "auth" | "transport" | "schema";
+
+export class QuotaClientError extends Error {
+  public constructor(
+    public readonly type: QuotaClientErrorType,
+    message: string,
+    public readonly cause?: unknown
+  ) {
+    super(message);
+  }
+}
 
 export interface QuotaClient {
   getQuotaSnapshot(): Promise<QuotaSnapshot>;
@@ -38,37 +51,100 @@ class ClawbayQuotaClient implements QuotaClient {
   public constructor(private readonly secretStore: SecretStore) {}
 
   public async getQuotaSnapshot(): Promise<QuotaSnapshot> {
-    const token = await this.secretStore.getToken();
-    if (!token) {
-      return makeSnapshot(
-        "unauthenticated",
-        "Clawbay: auth required",
-        "Click to set your API token."
-      );
-    }
+    try {
+      const data = await this.fetchQuotaWithRetry();
+      return buildSnapshot(data);
+    } catch (error) {
+      if (error instanceof QuotaClientError) {
+        switch (error.type) {
+          case "auth":
+            return makeSnapshot(
+              "unauthenticated",
+              "Clawbay: auth required",
+              "Token missing or rejected (401/403). Click to update your API token."
+            );
+          case "schema":
+            return makeSnapshot(
+              "error",
+              "Clawbay: schema error",
+              "API response did not match the expected schema."
+            );
+          case "transport":
+          default:
+            return makeSnapshot(
+              "error",
+              "Clawbay: error",
+              "API request failed due to a network or server issue."
+            );
+        }
+      }
 
-    const response = await fetch(QUOTA_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (response.status === 401 || response.status === 403) {
-      return makeSnapshot(
-        "unauthenticated",
-        "Clawbay: auth required",
-        "Token rejected (401/403). Click to update your API token."
-      );
-    }
-
-    if (!response.ok) {
       return makeSnapshot(
         "error",
         "Clawbay: error",
-        `API request failed: HTTP ${response.status}`
+        "Unexpected local error while parsing quota response."
       );
     }
+  }
 
-    const data = (await response.json()) as QuotaApiResponse;
-    return buildSnapshot(data);
+  private async fetchQuotaWithRetry(): Promise<QuotaApiResponse> {
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt += 1) {
+      const delayMs = RETRY_DELAYS_MS[attempt];
+      if (delayMs > 0) {
+        const jitter = Math.floor(Math.random() * 120);
+        await new Promise((resolve) => setTimeout(resolve, delayMs + jitter));
+      }
+
+      try {
+        return await this.fetchQuota();
+      } catch (error) {
+        if (!(error instanceof QuotaClientError) || error.type !== "transport") {
+          throw error;
+        }
+        lastError = error;
+      }
+    }
+
+    throw lastError ?? new QuotaClientError("transport", "Network error");
+  }
+
+  private async fetchQuota(): Promise<QuotaApiResponse> {
+    const token = await this.secretStore.getToken();
+    if (!token) {
+      throw new QuotaClientError("auth", "Missing token");
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(QUOTA_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (error) {
+      throw new QuotaClientError("transport", "Network error", error);
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new QuotaClientError("auth", "Token rejected");
+    }
+
+    if (!response.ok) {
+      throw new QuotaClientError("transport", `HTTP ${response.status}`);
+    }
+
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      throw new QuotaClientError("schema", "Invalid JSON", error);
+    }
+
+    try {
+      return parseQuotaApiResponse(payload);
+    } catch (error) {
+      throw new QuotaClientError("schema", "Schema validation failed", error);
+    }
   }
 }
 
