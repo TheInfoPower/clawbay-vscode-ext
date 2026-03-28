@@ -1,6 +1,7 @@
 import * as assert from "assert";
 import { createQuotaClient, QuotaClientError } from "../../quota/client";
 import { parseQuotaApiResponse } from "../../quota/model";
+import { createTokenProvider } from "../../quota/token-provider";
 
 const makePayload = () => ({
   observedAt: "2025-01-01T00:00:00.000Z",
@@ -39,6 +40,10 @@ const makeSecretStore = (token: string | undefined) => ({
   clearToken: async () => undefined,
 });
 
+const makeTokenProvider = (token: string | undefined) => ({
+  getToken: async () => token,
+});
+
 suite("Quota API parsing", () => {
   test("accepts a valid payload", () => {
     const parsed = parseQuotaApiResponse(makePayload());
@@ -61,7 +66,10 @@ suite("Quota client error mapping", () => {
   });
 
   test("throws auth error when token missing", async () => {
-    const client = createQuotaClient(makeSecretStore(undefined));
+    const client = createQuotaClient({
+      apiEndpoint: "https://example.com/quota",
+      tokenProvider: makeTokenProvider(undefined),
+    });
 
     try {
       await (client as unknown as { fetchQuota: () => Promise<unknown> }).fetchQuota();
@@ -79,7 +87,10 @@ suite("Quota client error mapping", () => {
         status: 500,
       }) as Response;
 
-    const client = createQuotaClient(makeSecretStore("token"));
+    const client = createQuotaClient({
+      apiEndpoint: "https://example.com/quota",
+      tokenProvider: makeTokenProvider("token"),
+    });
 
     try {
       await (client as unknown as { fetchQuota: () => Promise<unknown> }).fetchQuota();
@@ -100,7 +111,10 @@ suite("Quota client error mapping", () => {
         },
       }) as unknown as Response;
 
-    const client = createQuotaClient(makeSecretStore("token"));
+    const client = createQuotaClient({
+      apiEndpoint: "https://example.com/quota",
+      tokenProvider: makeTokenProvider("token"),
+    });
 
     try {
       await (client as unknown as { fetchQuota: () => Promise<unknown> }).fetchQuota();
@@ -129,10 +143,57 @@ suite("Quota client error mapping", () => {
       } as unknown as Response;
     };
 
-    const client = createQuotaClient(makeSecretStore("token"));
+    const client = createQuotaClient({
+      apiEndpoint: "https://example.com/quota",
+      tokenProvider: makeTokenProvider("token"),
+    });
     const snapshot = await client.getQuotaSnapshot();
 
     assert.equal(snapshot.state, "ok");
     assert.equal(attempts, 3);
+  });
+
+  test("uses custom endpoint when configured", async () => {
+    let requestedUrl: string | undefined;
+    globalThis.fetch = async (input: string | URL | Request) => {
+      requestedUrl = typeof input === "string" ? input : input.toString();
+      return {
+        ok: true,
+        status: 200,
+        json: async () => makePayload(),
+      } as unknown as Response;
+    };
+
+    const client = createQuotaClient({
+      apiEndpoint: "https://custom.example.com/quota",
+      tokenProvider: makeTokenProvider("token"),
+    });
+
+    await (client as unknown as { fetchQuota: () => Promise<unknown> }).fetchQuota();
+    assert.equal(requestedUrl, "https://custom.example.com/quota");
+  });
+});
+
+suite("Token source selection", () => {
+  test("prefers settings token over environment when configured", async () => {
+    const provider = createTokenProvider({
+      secretStore: makeSecretStore("secret-token"),
+      tokenSource: "settings",
+      getSettingsToken: () => "settings-token",
+      getEnvToken: () => "env-token",
+    });
+
+    assert.equal(await provider.getToken(), "settings-token");
+  });
+
+  test("does not fallback to settings/env when secret storage is selected", async () => {
+    const provider = createTokenProvider({
+      secretStore: makeSecretStore(undefined),
+      tokenSource: "secretStorage",
+      getSettingsToken: () => "settings-token",
+      getEnvToken: () => "env-token",
+    });
+
+    assert.equal(await provider.getToken(), undefined);
   });
 });

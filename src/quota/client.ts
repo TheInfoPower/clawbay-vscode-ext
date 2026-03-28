@@ -1,7 +1,5 @@
-import type { SecretStore } from "../auth/secret-store";
 import { makeSnapshot, parseQuotaApiResponse, type QuotaApiResponse, type QuotaSnapshot } from "./model";
-
-const QUOTA_URL = "https://theclawbay.com/api/codex-auth/v1/quota";
+import type { TokenProvider } from "./token-provider";
 const RETRY_DELAYS_MS = [0, 250, 750];
 
 export type QuotaClientErrorType = "auth" | "transport" | "schema";
@@ -48,7 +46,10 @@ function buildSnapshot(data: QuotaApiResponse): QuotaSnapshot {
 }
 
 class ClawbayQuotaClient implements QuotaClient {
-  public constructor(private readonly secretStore: SecretStore) {}
+  public constructor(
+    private readonly apiEndpoint: string,
+    private readonly tokenProvider: TokenProvider
+  ) {}
 
   public async getQuotaSnapshot(): Promise<QuotaSnapshot> {
     try {
@@ -111,14 +112,14 @@ class ClawbayQuotaClient implements QuotaClient {
   }
 
   private async fetchQuota(): Promise<QuotaApiResponse> {
-    const token = await this.secretStore.getToken();
+    const token = await this.tokenProvider.getToken();
     if (!token) {
       throw new QuotaClientError("auth", "Missing token");
     }
 
     let response: Response;
     try {
-      response = await fetch(QUOTA_URL, {
+      response = await fetch(this.apiEndpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (error) {
@@ -139,7 +140,6 @@ class ClawbayQuotaClient implements QuotaClient {
     } catch (error) {
       throw new QuotaClientError("schema", "Invalid JSON", error);
     }
-
     try {
       return parseQuotaApiResponse(payload);
     } catch (error) {
@@ -148,6 +148,11 @@ class ClawbayQuotaClient implements QuotaClient {
   }
 }
 
-export function createQuotaClient(secretStore: SecretStore): QuotaClient {
-  return new ClawbayQuotaClient(secretStore);
+export interface QuotaClientOptions {
+  apiEndpoint: string;
+  tokenProvider: TokenProvider;
+}
+
+export function createQuotaClient(options: QuotaClientOptions): QuotaClient {
+  return new ClawbayQuotaClient(options.apiEndpoint, options.tokenProvider);
 }

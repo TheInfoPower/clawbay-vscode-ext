@@ -27,6 +27,18 @@
         "title": "Clawbay Quota: Refresh"
       },
       {
+        "command": "clawbayQuota.setToken",
+        "title": "Clawbay Quota: Set Token"
+      },
+      {
+        "command": "clawbayQuota.clearToken",
+        "title": "Clawbay Quota: Clear Token"
+      },
+      {
+        "command": "clawbayQuota.authStatus",
+        "title": "Clawbay Quota: Show Auth Status"
+      },
+      {
         "command": "clawbayQuota.login",
         "title": "Clawbay Quota: Login"
       },
@@ -51,6 +63,31 @@
           ],
           "default": "left",
           "description": "Where the Clawbay status item appears."
+        },
+        "clawbayQuota.apiBaseUrl": {
+          "type": "string",
+          "default": "https://theclawbay.com/api/codex-auth/v1",
+          "description": "Base URL for the quota API (the extension appends /quota if needed)."
+        },
+        "clawbayQuota.tokenSource": {
+          "type": "string",
+          "enum": [
+            "secretStorage",
+            "settings",
+            "environment"
+          ],
+          "default": "secretStorage",
+          "description": "Where to read the API token from: SecretStorage (recommended), settings, or environment."
+        },
+        "clawbayQuota.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "Optional token stored in settings (not recommended for shared machines)."
+        },
+        "clawbayQuota.apiTokenEnvVar": {
+          "type": "string",
+          "default": "CLAWBAY_API_TOKEN",
+          "description": "Environment variable name to read the token from when tokenSource=environment or settings."
         }
       }
     }
