@@ -12,29 +12,35 @@ See your [Clawbay](https://theclawbay.com) API quota usage directly in the VS Co
 
 1. Install the extension
 2. Click the **Clawbay** item in the status bar (or run `Clawbay Quota: Login` from the command palette)
-3. Paste your Clawbay API key — it's stored securely and never logged
+3. Paste your Clawbay API key (Clawbay format, typically starts with `ca_`) — it's stored in global VS Code user settings and never logged
+
+If no token is set, the status bar will show an auth-required state; clicking it prompts for a token.
+
+`ca_*` keys are accepted.
 
 ## Configuration
 
-The extension supports configurable API endpoints and token sources.
+The extension supports configurable API endpoints, refresh cadence, and status bar alignment.
 
 ### Settings
 
 - `clawbayQuota.apiBaseUrl`: Base URL for the quota API (defaults to `https://theclawbay.com/api/codex-auth/v1`). The extension appends `/quota` if needed.
-- `clawbayQuota.tokenSource`: Where to read the token from (`secretStorage`, `settings`, or `environment`). Default: `secretStorage`.
-- `clawbayQuota.apiToken`: Optional token in settings (use only for local/dev; avoid on shared machines).
-- `clawbayQuota.apiTokenEnvVar`: Environment variable name to read when `tokenSource` is `environment` or `settings` (default: `CLAWBAY_API_TOKEN`).
+- `clawbayQuota.apiToken`: API token persisted globally (user settings scope) so authentication survives session and repository changes.
+- `clawbayQuota.refreshIntervalMinutes`: How often to auto-refresh quota data (minutes). Set to `0` to disable.
+- `clawbayQuota.statusBarAlignment`: Status bar placement (`left` or `right`).
+
+For the legacy codex-auth route (`/api/codex-auth/v1/quota`), the extension automatically requests `format=legacy_codex` for schema compatibility.
+
+On upgrade from older builds, any existing token in legacy SecretStorage is migrated once to `clawbayQuota.apiToken` at activation.
 
 ### Environment Variables
 
 - `CLAWBAY_API_BASE_URL`: Override the API base URL for local/dev (example: `https://api.example.com/codex-auth/v1`).
-- `CLAWBAY_API_TOKEN`: Provide a token when `tokenSource` is `environment`, or as a fallback when `tokenSource` is `settings`.
 
 Example (redacted):
 
 ```bash
 export CLAWBAY_API_BASE_URL="https://api.example.com/codex-auth/v1"
-export CLAWBAY_API_TOKEN="ca_v1.<redacted>"
 ```
 
 ## Commands

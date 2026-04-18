@@ -2,7 +2,7 @@
   "name": "clawbay-quota",
   "displayName": "Clawbay Quota",
   "description": "Track your Clawbay API spending without leaving VS Code. Shows 5-hour and weekly usage in the status bar — hover for cost breakdown and time until reset.",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "publisher": "theInfoPower",
   "license": "MIT",
   "icon": "icon.png",
@@ -25,6 +25,10 @@
       {
         "command": "clawbayQuota.refresh",
         "title": "Clawbay Quota: Refresh"
+      },
+      {
+        "command": "clawbayQuota.retry",
+        "title": "Clawbay Quota: Retry"
       },
       {
         "command": "clawbayQuota.setToken",
@@ -69,25 +73,11 @@
           "default": "https://theclawbay.com/api/codex-auth/v1",
           "description": "Base URL for the quota API (the extension appends /quota if needed)."
         },
-        "clawbayQuota.tokenSource": {
-          "type": "string",
-          "enum": [
-            "secretStorage",
-            "settings",
-            "environment"
-          ],
-          "default": "secretStorage",
-          "description": "Where to read the API token from: SecretStorage (recommended), settings, or environment."
-        },
         "clawbayQuota.apiToken": {
           "type": "string",
+          "scope": "application",
           "default": "",
-          "description": "Optional token stored in settings (not recommended for shared machines)."
-        },
-        "clawbayQuota.apiTokenEnvVar": {
-          "type": "string",
-          "default": "CLAWBAY_API_TOKEN",
-          "description": "Environment variable name to read the token from when tokenSource=environment or settings."
+          "description": "Clawbay API token persisted in global user settings so login remains across sessions and repositories."
         }
       }
     }

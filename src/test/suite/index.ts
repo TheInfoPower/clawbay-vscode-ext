@@ -8,7 +8,10 @@ export function run(): Promise<void> {
   });
 
   mocha.addFile(path.resolve(__dirname, "./extension.test"));
+  mocha.addFile(path.resolve(__dirname, "./auth-manager.test"));
+  mocha.addFile(path.resolve(__dirname, "./command-handlers.test"));
   mocha.addFile(path.resolve(__dirname, "./quota-client.test"));
+  mocha.addFile(path.resolve(__dirname, "./token-migration.test"));
 
   return new Promise((resolve, reject) => {
     mocha.run((failures) => {

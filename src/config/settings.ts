@@ -1,17 +1,17 @@
 import * as vscode from "vscode";
-import { isTokenSource, type TokenSource } from "../quota/token-source";
 
 export const EXTENSION_NAMESPACE = "clawbayQuota";
 export const REFRESH_COMMAND_ID = "clawbayQuota.refresh";
+export const RETRY_COMMAND_ID = "clawbayQuota.retry";
 export const LOGIN_COMMAND_ID = "clawbayQuota.login";
 export const LOGOUT_COMMAND_ID = "clawbayQuota.logout";
 export const SET_TOKEN_COMMAND_ID = "clawbayQuota.setToken";
 export const CLEAR_TOKEN_COMMAND_ID = "clawbayQuota.clearToken";
 export const AUTH_STATUS_COMMAND_ID = "clawbayQuota.authStatus";
 export const TOKEN_SECRET_KEY = "clawbayQuota.apiToken";
+export const API_TOKEN_SETTING_KEY = "apiToken";
 const DEFAULT_REFRESH_INTERVAL_MINUTES = 5;
 const DEFAULT_API_BASE_URL = "https://theclawbay.com/api/codex-auth/v1";
-const DEFAULT_TOKEN_ENV_VAR = "CLAWBAY_API_TOKEN";
 
 function trimToUndefined(value: string | undefined | null): string | undefined {
   if (!value) {
@@ -29,6 +29,18 @@ function normalizeQuotaEndpoint(baseOrEndpoint: string): string {
   }
 
   return `${trimmed}/quota`;
+}
+
+function ensureLegacyCodexFormat(endpoint: string): string {
+  try {
+    const parsed = new URL(endpoint);
+    if (parsed.pathname.endsWith("/api/codex-auth/v1/quota") && !parsed.searchParams.has("format")) {
+      parsed.searchParams.set("format", "legacy_codex");
+    }
+    return parsed.toString();
+  } catch {
+    return endpoint;
+  }
 }
 
 export function getStatusBarAlignment(): vscode.StatusBarAlignment {
@@ -58,26 +70,22 @@ export function getQuotaApiEndpoint(): string {
   const configured = trimToUndefined(config.get<string>("apiBaseUrl"));
   const envOverride = trimToUndefined(process.env.CLAWBAY_API_BASE_URL);
   const base = configured ?? envOverride ?? DEFAULT_API_BASE_URL;
-  return normalizeQuotaEndpoint(base);
+  const endpoint = normalizeQuotaEndpoint(base);
+  return ensureLegacyCodexFormat(endpoint);
 }
 
-export function getTokenSource(): TokenSource {
+export function getConfiguredApiToken(): string | undefined {
   const config = vscode.workspace.getConfiguration(EXTENSION_NAMESPACE);
-  const configured = config.get<string>("tokenSource", "secretStorage");
-  return isTokenSource(configured) ? configured : "secretStorage";
+  const inspected = config.inspect<string>(API_TOKEN_SETTING_KEY);
+  return trimToUndefined(inspected?.globalValue);
 }
 
-export function getSettingsToken(): string | undefined {
+export function setConfiguredApiToken(token: string): Thenable<void> {
   const config = vscode.workspace.getConfiguration(EXTENSION_NAMESPACE);
-  return trimToUndefined(config.get<string>("apiToken"));
+  return config.update(API_TOKEN_SETTING_KEY, token.trim(), vscode.ConfigurationTarget.Global);
 }
 
-export function getTokenEnvVarName(): string {
+export function clearConfiguredApiToken(): Thenable<void> {
   const config = vscode.workspace.getConfiguration(EXTENSION_NAMESPACE);
-  const configured = trimToUndefined(config.get<string>("apiTokenEnvVar"));
-  return configured ?? DEFAULT_TOKEN_ENV_VAR;
-}
-
-export function getEnvToken(tokenEnvVarName: string): string | undefined {
-  return trimToUndefined(process.env[tokenEnvVarName]);
+  return config.update(API_TOKEN_SETTING_KEY, undefined, vscode.ConfigurationTarget.Global);
 }
