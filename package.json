@@ -2,7 +2,7 @@
   "name": "clawbay-quota",
   "displayName": "Clawbay Quota",
   "description": "Track your Clawbay API spending without leaving VS Code. Shows 5-hour and weekly usage in the status bar — hover for cost breakdown and time until reset.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "theInfoPower",
   "license": "MIT",
   "icon": "icon.png",
@@ -89,7 +89,7 @@
     "pretest": "npm run compile",
     "test": "node ./out/test/run-test.js",
     "test:ci": "npm run compile && VSCODE_SKIP_LAUNCH_TESTS=1 node ./out/test/run-test.js",
-    "package": "vsce package"
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

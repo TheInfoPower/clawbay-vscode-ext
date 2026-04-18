@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 export type QuotaState =
   | "loading"
   | "unauthenticated"
@@ -7,31 +5,28 @@ export type QuotaState =
   | "rate-limited"
   | "transient-failure";
 
-const UsageWindowSchema = z.object({
-  windowStart: z.string(),
-  windowEnd: z.string(),
-  secondsUntilReset: z.coerce.number(),
-  requestCount: z.coerce.number(),
-  estimatedCostUsdUsed: z.coerce.number(),
-  costUsdLimit: z.coerce.number(),
-  costUsdRemaining: z.coerce.number(),
-  percentUsed: z.coerce.number(),
-  limitReached: z.boolean(),
-});
+export interface UsageWindow {
+  windowStart: string;
+  windowEnd: string;
+  secondsUntilReset: number;
+  requestCount: number;
+  estimatedCostUsdUsed: number;
+  costUsdLimit: number;
+  costUsdRemaining: number;
+  percentUsed: number;
+  limitReached: boolean;
+}
 
-const QuotaApiResponseSchema = z.object({
-  observedAt: z.string(),
-  anyLimitReached: z.boolean(),
-  fiveHourLimitReached: z.boolean(),
-  weeklyLimitReached: z.boolean(),
-  usage: z.object({
-    fiveHour: UsageWindowSchema,
-    weekly: UsageWindowSchema,
-  }),
-});
-
-export type UsageWindow = z.infer<typeof UsageWindowSchema>;
-export type QuotaApiResponse = z.infer<typeof QuotaApiResponseSchema>;
+export interface QuotaApiResponse {
+  observedAt: string;
+  anyLimitReached: boolean;
+  fiveHourLimitReached: boolean;
+  weeklyLimitReached: boolean;
+  usage: {
+    fiveHour: UsageWindow;
+    weekly: UsageWindow;
+  };
+}
 
 export interface QuotaSnapshot {
   state: QuotaState;
@@ -51,13 +46,115 @@ export function makeSnapshot(state: QuotaState, label: string, detail: string): 
 
 export function parseQuotaApiResponse(payload: unknown): QuotaApiResponse {
   try {
-    return QuotaApiResponseSchema.parse(payload);
+    return parseNormalizedPayload(payload);
   } catch {
-    return QuotaApiResponseSchema.parse(normalizeQuotaPayload(payload));
+    return parseNormalizedPayload(normalizeQuotaPayload(payload));
   }
 }
 
-export { QuotaApiResponseSchema, UsageWindowSchema };
+function parseNormalizedPayload(payload: unknown): QuotaApiResponse {
+  const record = asRecord(payload, "Invalid quota payload");
+  const usageRecord = asRecord(record["usage"], "Invalid quota payload: usage must be an object");
+
+  return {
+    observedAt: asString(record["observedAt"], "Invalid quota payload: observedAt must be a string"),
+    anyLimitReached: asBoolean(
+      record["anyLimitReached"],
+      "Invalid quota payload: anyLimitReached must be a boolean"
+    ),
+    fiveHourLimitReached: asBoolean(
+      record["fiveHourLimitReached"],
+      "Invalid quota payload: fiveHourLimitReached must be a boolean"
+    ),
+    weeklyLimitReached: asBoolean(
+      record["weeklyLimitReached"],
+      "Invalid quota payload: weeklyLimitReached must be a boolean"
+    ),
+    usage: {
+      fiveHour: parseUsageWindow(usageRecord["fiveHour"], "fiveHour"),
+      weekly: parseUsageWindow(usageRecord["weekly"], "weekly"),
+    },
+  };
+}
+
+function parseUsageWindow(value: unknown, windowName: string): UsageWindow {
+  const record = asRecord(value, `Invalid quota payload: usage.${windowName} must be an object`);
+
+  return {
+    windowStart: asString(
+      record["windowStart"],
+      `Invalid quota payload: usage.${windowName}.windowStart must be a string`
+    ),
+    windowEnd: asString(
+      record["windowEnd"],
+      `Invalid quota payload: usage.${windowName}.windowEnd must be a string`
+    ),
+    secondsUntilReset: asNumber(
+      record["secondsUntilReset"],
+      `Invalid quota payload: usage.${windowName}.secondsUntilReset must be numeric`
+    ),
+    requestCount: asNumber(
+      record["requestCount"],
+      `Invalid quota payload: usage.${windowName}.requestCount must be numeric`
+    ),
+    estimatedCostUsdUsed: asNumber(
+      record["estimatedCostUsdUsed"],
+      `Invalid quota payload: usage.${windowName}.estimatedCostUsdUsed must be numeric`
+    ),
+    costUsdLimit: asNumber(
+      record["costUsdLimit"],
+      `Invalid quota payload: usage.${windowName}.costUsdLimit must be numeric`
+    ),
+    costUsdRemaining: asNumber(
+      record["costUsdRemaining"],
+      `Invalid quota payload: usage.${windowName}.costUsdRemaining must be numeric`
+    ),
+    percentUsed: asNumber(
+      record["percentUsed"],
+      `Invalid quota payload: usage.${windowName}.percentUsed must be numeric`
+    ),
+    limitReached: asBoolean(
+      record["limitReached"],
+      `Invalid quota payload: usage.${windowName}.limitReached must be a boolean`
+    ),
+  };
+}
+
+function asRecord(value: unknown, message: string): Record<string, unknown> {
+  if (!value || typeof value !== "object") {
+    throw new Error(message);
+  }
+  return value as Record<string, unknown>;
+}
+
+function asString(value: unknown, message: string): string {
+  if (typeof value !== "string") {
+    throw new Error(message);
+  }
+  return value;
+}
+
+function asBoolean(value: unknown, message: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(message);
+  }
+  return value;
+}
+
+function asNumber(value: unknown, message: string): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  throw new Error(message);
+}
 
 function normalizeQuotaPayload(payload: unknown): unknown {
   if (!payload || typeof payload !== "object") {
@@ -121,8 +218,8 @@ function normalizeRateLimitShape(root: Record<string, unknown>): unknown {
   const primary = (rateLimit["primary_window"] as Record<string, unknown>) ?? {};
   const secondary = (rateLimit["secondary_window"] as Record<string, unknown>) ?? {};
 
-  const fiveHourPercent = toNumber(primary["used_percent"]);
-  const weeklyPercent = toNumber(secondary["used_percent"]);
+  const fiveHourPercent = toNumber(primary["used_percent"], 0);
+  const weeklyPercent = toNumber(secondary["used_percent"], 0);
   const fiveHourLimitReached = toBoolean(primary["limit_reached"] ?? rateLimit["limit_reached"]);
   const weeklyLimitReached = toBoolean(secondary["limit_reached"] ?? false);
 
@@ -193,31 +290,30 @@ function extractUsage(root: Record<string, unknown>):
 
 function normalizeWindow(window: Record<string, unknown>): Record<string, unknown> {
   const costUsed = toNumber(
-    window["estimatedCostUsdUsed"] ?? window["estimated_cost_usd_used"] ?? window["costUsedUsd"]
+    window["estimatedCostUsdUsed"] ?? window["estimated_cost_usd_used"] ?? window["costUsedUsd"],
+    0
   );
-  const costLimit = toNumber(
-    window["costUsdLimit"] ?? window["cost_usd_limit"] ?? window["limitUsd"]
-  );
+  const costLimit = toNumber(window["costUsdLimit"] ?? window["cost_usd_limit"] ?? window["limitUsd"], 0);
   const costRemaining = toNumber(
     window["costUsdRemaining"] ??
       window["cost_usd_remaining"] ??
-      (Number.isFinite(costLimit) && Number.isFinite(costUsed)
-        ? (costLimit as number) - (costUsed as number)
-        : undefined)
+      (Number.isFinite(costLimit) && Number.isFinite(costUsed) ? costLimit - costUsed : undefined),
+    0
   );
   const percentUsed = toNumber(
     window["percentUsed"] ??
       window["percent_used"] ??
-      (Number.isFinite(costLimit) && Number.isFinite(costUsed) && (costLimit as number) > 0
-        ? ((costUsed as number) / (costLimit as number)) * 100
-        : 0)
+      (Number.isFinite(costLimit) && Number.isFinite(costUsed) && costLimit > 0
+        ? (costUsed / costLimit) * 100
+        : 0),
+    0
   );
 
   return {
     windowStart: toStringOrNow(window["windowStart"] ?? window["window_start"]),
     windowEnd: toStringOrNow(window["windowEnd"] ?? window["window_end"]),
-    secondsUntilReset: toNumber(window["secondsUntilReset"] ?? window["seconds_until_reset"]),
-    requestCount: toNumber(window["requestCount"] ?? window["request_count"] ?? 0),
+    secondsUntilReset: toNumber(window["secondsUntilReset"] ?? window["seconds_until_reset"], 0),
+    requestCount: toNumber(window["requestCount"] ?? window["request_count"] ?? 0, 0),
     estimatedCostUsdUsed: costUsed,
     costUsdLimit: costLimit,
     costUsdRemaining: costRemaining,
@@ -230,9 +326,19 @@ function toStringOrNow(value: unknown): string {
   return typeof value === "string" && value.trim() !== "" ? value : new Date().toISOString();
 }
 
-function toNumber(value: unknown): number {
-  const num = typeof value === "string" ? Number(value) : (value as number);
-  return Number.isFinite(num) ? num : 0;
+function toNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
 }
 
 function toBoolean(value: unknown): boolean {
@@ -249,7 +355,7 @@ function toBoolean(value: unknown): boolean {
 }
 
 function isoFromUnixOrNow(value: unknown): string {
-  const unix = toNumber(value);
+  const unix = toNumber(value, 0);
   if (unix > 0) {
     return new Date(unix * 1000).toISOString();
   }
@@ -258,7 +364,7 @@ function isoFromUnixOrNow(value: unknown): string {
 
 function windowStartFromReset(window: Record<string, unknown>): string {
   const endIso = isoFromUnixOrNow(window["reset_at"]);
-  const limitSeconds = toNumber(window["limit_window_seconds"]);
+  const limitSeconds = toNumber(window["limit_window_seconds"], 0);
   const endMs = new Date(endIso).getTime();
   if (!Number.isFinite(endMs) || limitSeconds <= 0) {
     return new Date().toISOString();

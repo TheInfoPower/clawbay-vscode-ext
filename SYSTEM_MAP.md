@@ -1,49 +1,55 @@
 # SYSTEM MAP: clawbay-vscode-ext
 
-Date: 2026-04-01
+Date: 2026-04-18
 
 ## Tech Stack
-- Language: TypeScript (extension source in `src/`, compiled to `out/`) (`package.json`:1-104).
-- Runtime: VS Code Extension Host (`package.json`:13-22).
-- Testing: Mocha via `@vscode/test-electron` (`package.json`:83-96).
-- Packaging: `vsce` (`package.json`:79-87, 93).
-- Validation: Zod schemas for API responses (`src/quota/model.ts`:1-56).
+- Language: TypeScript (extension source in `src/`, compiled to `out/`).
+- Runtime: VS Code Extension Host (`package.json`).
+- Testing: Mocha via `@vscode/test-electron`.
+- Packaging: `vsce`.
+- Validation: Zod schemas for API responses (`src/quota/model.ts`).
 
 ## Directory Structure
-- `src/` — extension source code (commands, auth, quota client, UI).
-- `out/` — compiled JS output (main entry: `out/extension.js`, `package.json`:22).
-- `docs/` — release checklist (`docs/release-checklist.md`).
-- `plans/` — planning artifacts.
-- Root assets: `icon.png`, `icon.svg`.
+- `src/` - extension source code (commands, auth, quota client, UI).
+- `src/auth/` - auth manager, token store, token format, migration helpers.
+- `src/quota/` - quota client, model parsing, token provider/source.
+- `src/test/suite/` - extension + client + auth/token migration tests.
+- `docs/` - release checklist.
+- `out/` - compiled JS output (main entry: `out/extension.js`).
 
 ## Entry Points
-- Extension activation: `activate()` in `src/extension.ts`:25-91.
-- Commands registration: `src/extension.ts`:80-87 with command IDs from `src/config/settings.ts`:4-10.
+- Extension activation: `activate()` in `src/extension.ts`.
+- Command registration + wiring: `src/extension.ts` and `src/config/settings.ts`.
 
 ## Architecture Pattern
-- Layered extension flow: activation → command handlers → refresh scheduler → quota client → status bar UI.
-- Data flow: refresh event triggers quota fetch → `QuotaClient` parses response → `QuotaStatusBar` renders status.
-  - Refresh handler: `src/commands/refresh.ts`:20-56.
-  - Scheduler: `src/refresh/scheduler.ts`:16-105.
-  - Quota client: `src/quota/client.ts`:106-205.
-  - Status bar renderer: `src/ui/status-bar.ts`:4-80.
+- Layered extension flow: activation -> command handlers -> refresh scheduler -> quota client -> status bar UI.
+- Auth pipeline now prioritizes settings-backed token store with one-time legacy SecretStorage migration.
+- Data flow: refresh event triggers quota fetch -> `QuotaClient` parses response -> `QuotaStatusBar` renders status.
 
 ## Key Conventions
-- Config/commands centralized in `src/config/settings.ts`:3-61.
-- API response shape enforced via Zod schemas in `src/quota/model.ts`:10-56.
-- Auth/token operations isolated in `src/auth/auth-manager.ts`:1-19 and `src/auth/secret-store.ts` (SecretStorage adapter).
+- Config and command IDs centralized in `src/config/settings.ts`.
+- API response shape enforced via Zod schemas in `src/quota/model.ts`.
+- Auth/token operations isolated under `src/auth/` and consumed via token provider/source abstraction.
+
+## Recent Changes Since 2026-04-01
+- Implemented legacy token migration to a settings-backed token store (`src/auth/migration.ts`, `src/auth/token-store.ts`).
+- Added token format validation helpers and token source/provider modules (`src/auth/token-format.ts`, `src/quota/token-source.ts`, `src/quota/token-provider.ts`).
+- Updated command handlers and refresh flow to use the new token management path.
+- Added/updated tests for auth manager, command handlers, quota client, extension activation, and token migration.
 
 ## External Dependencies
-- Clawbay Quota API endpoint configured via setting/env (`src/config/settings.ts`:55-60).
-- VS Code SecretStorage for token persistence (`src/auth/secret-store.ts`).
+- Clawbay Quota API endpoint configured via setting/env (`src/config/settings.ts`).
+- VS Code APIs for settings + SecretStorage compatibility path.
 
 ## Complexity Hotspots
-1. Quota client retry + abort handling (`src/quota/client.ts`:37-187).
-2. Refresh scheduling with in-flight + debounce coordination (`src/refresh/scheduler.ts`:16-105).
+1. Token-source resolution and migration sequencing across settings + legacy SecretStorage paths.
+2. Quota client retry/timeout/error normalization behavior.
+3. Refresh scheduling with in-flight/debounce coordination.
 
 ## Risk Areas
-1. API response schema drift could surface as `schema` errors (`src/quota/client.ts`:133-138, `src/quota/model.ts`:22-56).
-2. Refresh interval set to 0 disables auto-refresh (intentional) — UI relies on manual refresh (`src/config/settings.ts`:43-52).
+1. Token migration regressions can cause auth-required UI loops after upgrade.
+2. API schema drift can surface as `schema` errors in client parsing.
+3. Refresh interval `0` intentionally disables auto-refresh; UX then depends on manual refresh.
 
 ## Testing Status
-- Extension command registration and quota client tests in `src/test/suite` (Mocha). (`package.json`:83-86).
+- Mocha suites cover extension activation, command handlers, quota client, auth manager, and token migration (`src/test/suite`).
